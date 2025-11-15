@@ -34,5 +34,8 @@ $routes->post('dashboard/departamentos/novo', '\Modules\Departments\Controllers\
 $routes->post('dashboard/departamentos/(:num)', '\Modules\Departments\Controllers\API::update/$1');
 $routes->delete('dashboard/departamentos/(:num)', '\Modules\Departments\Controllers\API::delete/$1');
 
+// gerenciar o fetch de generate-content do Gemini
+$routes->post('dashboard/departamentos/api/generate-description', '\Modules\Departments\Controllers\API::generateDescription');
+
 $routes->get('dashboard/departamentos/api/read', '\Modules\Departments\Controllers\API::list');
 

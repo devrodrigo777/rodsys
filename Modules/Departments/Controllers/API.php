@@ -10,6 +10,7 @@ use Modules\Permissoes\Models\PermissoesModel;
 use Modules\Departments\Services\DepartmentService;
 use Modules\Departments\Models\DepartmentModel;
 
+
 class API extends ResourceController
 {
     
@@ -35,6 +36,101 @@ class API extends ResourceController
         }
     }
 
+    /**
+     * Gera uma descrição concisa para um departamento usando Google Gemini AI.
+     * 
+     * Esta função recebe o nome de um departamento via JSON no body da requisição
+     * e utiliza a API do Google Gemini 2.5-flash para gerar uma descrição profissional
+     * com no máximo 40 caracteres.
+     * 
+     * @return ResponseInterface JSON response com:
+     *         - success: { status: 'success', content: string (descrição gerada) }
+     *         - error: { status: 'error', message: string, status_code?: int, details?: array }
+     * 
+     * Request:
+     *   POST /dashboard/departamentos/api/generate-description
+     *   Content-Type: application/json
+     *   Body: { "departmentName": "Nome do Departamento" }
+     * 
+     * Response Success (200):
+     *   { "status": "success", "content": "Descrição Profissional Gerada" }
+     * 
+     * Response Errors:
+     *   - 400: Nome do departamento não fornecido
+     *   - 500: Chave de API não carregada ou erro na requisição Gemini
+     * 
+     * @throws Exception Se houver erro na requisição HTTP ou parsing JSON
+     */
+    public function generateDescription()
+    {
+        $json = json_decode($this->request->getBody(), true);
+        $departmentName = $json['departmentName'] ?? null;
+
+        if (!$departmentName) {
+            return $this->fail('Nome do departamento não fornecido.', 400);
+        }
+
+        $client = service('curlrequest');;
+
+        $geminiKey = getenv('GEMINI_API_KEY');
+
+        if (empty($geminiKey)) {
+            return $this->fail('Chave de API não carregada.', 500);
+        }
+
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $geminiKey;
+
+        // Payload Corrigido para PHP (será codificado em JSON pelo CI4)
+        $payload = [
+            // 1. "contents" agora é um ARRAY [ { ... } ]
+            'contents' => [ 
+                [
+                    // É altamente recomendável incluir o "role" mesmo para o primeiro turno
+                    'role' => 'user', 
+                    'parts' => [
+                        [
+                            'text' => 'Gere uma descrição concisa e profissional para um departamento chamado '.esc($departmentName).'. A descrição deve ter no máximo 40 caracteres. Responda apenas com a descrição, sem explicações adicionais.Ex: "Departamento de Recursos Humanos".',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        try {
+            $response = $client->request('POST', $url, [
+                'json' => $payload,
+                'timeout' => 20,
+            ]);
+
+            // Obter e decodificar a resposta
+            $statusCode = $response->getStatusCode();
+            $body = $response->getBody();
+            $data = json_decode($body, true);
+
+            if ($statusCode === 200) {
+                // Acesso ao texto gerado
+                $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                
+                return $this->response->setJSON([
+                    'status' => 'success',
+                    'description' => $text,
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Erro na API do Gemini',
+                    'status_code' => $statusCode,
+                    'details' => $data,
+                ])->setStatusCode($statusCode);
+            }
+        }
+        catch (\Exception $e) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Exceção ao chamar a API do Gemini: ' . $e->getMessage(),
+            ])->setStatusCode(500);
+        }
+    }
 
     /**
      * Atualiza um departamento existente.
