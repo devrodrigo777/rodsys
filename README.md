@@ -157,14 +157,16 @@ cargos (N) ────── (M) permissoes (via cargos_permissoes)
    composer install
    ```
 
-3. **Configure o ambiente**
+3. **Configure o ambiente (use o .env.example)**
    ```bash
-   cp env .env
-   # Edite .env com suas credenciais de banco de dados
+   cp env .env.example
+   # Edite .env.example com suas credenciais de banco de dados
+   # e API_KEY. Após isto, renomeie para .env
    ```
 
 4. **Importe o banco de dados**
    ```bash
+   Use o start_rodsys.sql para pré-configurar.
    mysql -u root -p rodsys < database.sql
    ```
 
