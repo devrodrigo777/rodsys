@@ -459,15 +459,15 @@ MIT License - veja arquivo `LICENSE` para detalhes.
 
 ## 👥 Contribuidores
 
-- Desenvolvedor Principal: [Seu Nome]
-- Data de Início: [Data]
+- Desenvolvedor Principal: Rodrigo Lopes @RodrigoLCA
+- Data de Início: 15/11/2025
 - Status: ✅ Em Produção / 🔧 Em Desenvolvimento
 
 ---
 
 ## 📞 Suporte
 
-Para dúvidas ou reportar bugs, abra uma **Issue** no GitHub ou entre em contato pelo email: [seu-email@domain.com]
+Para dúvidas ou reportar bugs, abra uma **Issue** no GitHub ou entre em contato pelo email: [rodrigolca@gmail.com] com o assunto
 
 ---
 
@@ -479,7 +479,6 @@ Para dúvidas ou reportar bugs, abra uma **Issue** no GitHub ou entre em contato
 - [ ] Relatórios (PDF/Excel)
 - [ ] Dashboard com gráficos
 - [ ] API pública com rate-limiting
-- [ ] Testes E2E com Selenium
 
 ---
 
