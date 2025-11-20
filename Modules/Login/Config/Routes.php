@@ -7,7 +7,7 @@ use CodeIgniter\Router\RouteCollection;
  */
 $permissoesModel = new \Modules\Permissoes\Models\PermissoesModel();
 
-if (! $permissoesModel->user_has_permission('dash.login.view')
+if (! $permissoesModel->user_has_permission('mod.user.view')
     && ! $permissoesModel->user_is_superadmin()) {
     $forbiddenPermissionCallback = function(){
         $session = session();

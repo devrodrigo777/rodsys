@@ -31,7 +31,7 @@ class Empresas extends Controller
     {
         $permissionsModel = new PermissoesModel();
 
-        if (!$permissionsModel->user_has_permission('empresas.view') && !$permissionsModel->user_is_superadmin()) {
+        if (!$permissionsModel->user_has_permission('mod.empresas.view') && !$permissionsModel->user_is_superadmin()) {
             return redirect()->to('dashboard')->with('error', 'Acesso negado');
         }
 
@@ -57,7 +57,7 @@ class Empresas extends Controller
     {
         $permissionsModel = new PermissoesModel();
 
-        if (!$permissionsModel->user_has_permission('empresas.create') && !$permissionsModel->user_is_superadmin()) {
+        if (!$permissionsModel->user_has_permission('mod.empresas.create') && !$permissionsModel->user_is_superadmin()) {
             return redirect()->to('dashboard/empresas')->with('error', 'Acesso negado');
         }
 
@@ -78,7 +78,7 @@ class Empresas extends Controller
     {
         $permissionsModel = new PermissoesModel();
 
-        if (!$permissionsModel->user_has_permission('empresas.edit') && !$permissionsModel->user_is_superadmin()) {
+        if (!$permissionsModel->user_has_permission('mod.empresas.edit') && !$permissionsModel->user_is_superadmin()) {
             return redirect()->to('dashboard/empresas')->with('error', 'Acesso negado');
         }
 

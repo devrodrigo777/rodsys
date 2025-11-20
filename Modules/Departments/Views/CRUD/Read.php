@@ -10,10 +10,10 @@
                         </h1>
                     </div>
                     <div class="col-12 col-xl-auto mb-3">
-                        <button class="btn btn-sm btn-light text-primary" onclick="window.location.href='<?=base_url("dashboard/departamentos/novo")?>'">
+                        <a class="btn btn-sm btn-light text-primary" href="<?=base_url('dashboard/departamentos/novo')?>">
                             <i class="me-1" data-feather="user-plus"></i>
                             Novo Departamento
-                        </button>
+</a>
                     </div>
                 </div>
             </div>

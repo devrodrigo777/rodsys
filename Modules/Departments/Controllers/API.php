@@ -16,8 +16,20 @@ class API extends ResourceController
     
     use ResponseTrait;
 
+    private $permissionsModel;
+
+    public function __construct()
+    {
+        $this->permissionsModel = new PermissoesModel();
+    }
+
     public function create()
     {
+        // Verificar permissões de criar o departamento aqui, se necessário
+        if(!$this->permissionsModel->user_has_permission('user.departments.create') && !$this->permissionsModel->user_is_superadmin()) {
+            return redirect()->to('/dashboard/departmentos')->with('error', 'Você não tem permissão para criar um novo departamento.');
+        }
+
         // Get POST data
         $nome = $_POST['inputNome'] ?? null;
         $descricao = $_POST['inputDescricao'] ?? null;
@@ -137,6 +149,11 @@ class API extends ResourceController
      */
     public function update($id = null)
     {
+        // Tem permissão para atualizar? Se não, redireciona com erro
+        if(!$this->permissionsModel->user_has_permission('user.departments.edit') && !$this->permissionsModel->user_is_superadmin()) {
+            return redirect()->to('/dashboard/departamentos')->with('error', 'Você não tem permissão para editar este departamento.');
+        }
+
         // Get POST data
         $nome = $_POST['inputNome'] ?? null;
         $descricao = $_POST['inputDescricao'] ?? null;
@@ -170,6 +187,11 @@ class API extends ResourceController
      */
         public function delete($id = null)
         {
+            // Tem permissão para deletar? Se não, retorna erro
+            if(!$this->permissionsModel->user_has_permission('user.departments.delete') && !$this->permissionsModel->user_is_superadmin()) {
+                return $this->fail('Você não tem permissão para deletar este departamento.', 403);
+            }
+            
             if (!$id) {
                 return $this->fail('ID do departamento não fornecido.', 400);
             }
@@ -239,13 +261,15 @@ class API extends ResourceController
                     $is_global = $row['is_global'];
                     $html_actions = '';
 
-                    if($permissionsModel->user_has_permission('user.edit') && !$is_global) {
+                    if(($permissionsModel->user_has_permission('mod.departments.edit') && !$is_global) ||
+                        ($permissionsModel->user_is_superadmin() && $is_global)
+                ) {
                     $html_actions .= '
                         <button class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="Editar" onclick="editDepartment(' . $id_department . ')"><i class="fa fa-edit"></i></button>
                         ';
                     }
 
-                    if($permissionsModel->user_has_permission('user.delete') && !$is_global) {
+                    if(($permissionsModel->user_has_permission('mod.departments.delete') && !$is_global)) {
                         if (!$row['superadmin_only']) {
                             $departmentName = esc($row['nome']);
                             $html_actions .= '

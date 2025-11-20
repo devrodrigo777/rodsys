@@ -10,11 +10,11 @@
                         </h1>
                     </div>
                     <div class="col-12 col-xl-auto mb-3">
-                        <a class="btn btn-sm btn-light text-primary" href="user-management-groups-list.html">
+                        <!-- <a class="btn btn-sm btn-light text-primary" href="user-management-groups-list.html">
                             <i class="me-1" data-feather="users"></i>
                             Gerenciar Cargos
-                        </a>
-                        <?php if($permissoes->user_has_permission('user.create')): ?>
+                        </a> -->
+                        <?php if($permissoes->user_has_permission('mod.user.create') || $permissoes->user_is_superadmin()): ?>
                         <button class="btn btn-sm btn-light text-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
                             <i class="me-1" data-feather="user-plus"></i>
                             Criar Usuário
@@ -44,7 +44,7 @@
     </div>
 </main>
 
-<?php if($permissoes->user_has_permission('user.create')): ?>
+<?php if($permissoes->user_has_permission('mod.user.create') || $permissoes->user_is_superadmin()): ?>
 <!-- Modal para criar novo usuario -->
 <div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -82,10 +82,28 @@
                             <!-- Form Group (Roles)-->
                             <div class="mb-3">
                                 <label class="small mb-1">Empresa</label>
+                                <?php // verificaremos no GET se há empresa_id para pré-selecionar a empresa
+                                // Se existir uma empresa com esse GET, criar e pré-selecionar no select
+
+                                // empresa_id_pre_selecionada será por padrão a empresa atual do usuário logado
+                                $empresa_id_pre_selecionada = $usuario['id_empresa'];
+                                $option_selected = '';
+
+                                if(isset($_GET['empresa_id']))
+                                    $empresa_id_pre_selecionada = intval($_GET['empresa_id']);
+
+                                  ?>
                                 <select id="inputEmpresa" name="inputEmpresa" class="form-select" required aria-label="Default select example">
-                                    <option selected disabled>Selecione:</option>
                                     <?php foreach($lista_empresas as $empresa): ?>
-                                        <option value="<?=$empresa['id_empresa']?>"><?=$empresa['id_empresa']?> - <?=$empresa['razao_social']?></option>
+                                        <?php
+                                        // Definir a opção selecionada
+                                        if($empresa['id_empresa']==$empresa_id_pre_selecionada){
+                                            $option_selected = 'selected';
+                                        } else {
+                                            $option_selected = '';
+                                        }
+                                        ?>
+                                        <option <?=$option_selected?> value="<?=$empresa['id_empresa']?>"><?=$empresa['id_empresa']?> - <?=$empresa['razao_social']?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -106,32 +124,46 @@
             </div>
         </div>
     </div>
-
-<?php
-    // Verificar se há o flashdata success para exibir o swal.fire pro usuario
-    if(
-        session()->getFlashdata('user.feedback.success')):
-    
-        $message = session()->getFlashdata('user.feedback.success');
-    ?>
 <script>
+
     document.addEventListener('DOMContentLoaded', function() {
-        Swal.fire({
-            icon: 'success',
-            text: '<?= esc($message) ?>',
-            timer: 3000,
-            timerProgressBar: true,
-            showConfirmButton: false,
-            didOpen: (toast) => {
-                Swal.hideLoading()
-            },
-            willClose: () => {
-                // Optional: reload page or refresh datatable
-            }
-        });
+
+        <?php
+            // Verificar se há o flashdata success para exibir o swal.fire pro usuario
+            if(session()->getFlashdata('user.feedback.success')):
+                $message = session()->getFlashdata('user.feedback.success');
+        ?>
+
+            Swal.fire({
+                icon: 'success',
+                text: '<?= esc($message) ?>',
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                didOpen: (toast) => {
+                    Swal.hideLoading()
+                },
+                willClose: () => {
+                    // Optional: reload page or refresh datatable
+                }
+            });
+            
+        <?php
+            endif;
+        ?>
+
+        <?php
+            // verificar get action=new para abrir modal
+            if(isset($_GET['action']) && $_GET['action']=='new'):
+        ?>
+                var myModal = new bootstrap.Modal(document.getElementById('createUserModal'), {
+                    keyboard: false
+                });
+                myModal.show();
+        <?php
+            endif;
+        ?>
     });
 </script>
 <?php endif; ?>
-
-    <?php endif; ?>
 

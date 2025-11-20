@@ -43,7 +43,7 @@ class Dashboard extends BaseController
     public function _render($data = [])
     {
         // Verifica Session antes de Prosseguir
-        if(!(new AuthService())->is_logged_in()) {
+        if(!(new AuthService())->is_logged_in() || !(new AuthService())->validate_session()) {
             return redirect()->to(base_url('/login'));
         }
 

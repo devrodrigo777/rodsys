@@ -33,8 +33,20 @@
                                 <input type="hidden" name="id_empresa" value="<?= esc($empresa['id_empresa'] ?? '') ?>" />
                             <?php endif; ?>
 
+                           <!--  Form Group Disabled (ID Empresa)-->
+                           <?php if (!empty($is_editing) && isset($empresa['id_empresa'])): ?>
+                                <div class="row gx-3 mb-3">
+                                    <div class="col-md-12">
+                                        <label class="small mb-1" for="inputIdEmpresa">ID da Empresa</label>
+                                        <input class="form-control" id="inputIdEmpresa" type="text" disabled
+                                            value="<?= esc($empresa['id_empresa']) ?>" />
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
                             <!-- Form Row-->
                             <div class="row gx-3 mb-3">
+                                
                                 <!-- Form Group (Razão Social)-->
                                 <div class="col-md-6">
                                     <label class="small mb-1" for="inputRazaoSocial">Razão Social</label>
@@ -73,6 +85,15 @@
 
                             <!-- Submit button-->
                             <button class="btn btn-primary" type="submit"><?=($is_editing) ? 'Atualizar' : 'Criar'?> Empresa</button>
+
+                            <!-- Criar usuário -->
+                             <?php
+                                // Botão criar usuário vinculado à empresa, apenas se estiver editando e se for superadmin
+                                 if (!empty($is_editing) && $permissions->user_is_superadmin() ): ?>
+                                <a class="btn btn-warning ms-2" href="<?=base_url('dashboard/acessos/usuarios/?action=new&empresa_id=' . $empresa['id_empresa'])?>">
+                                    Criar Usuário para esta Empresa
+                                </a>
+                            <?php endif; ?>
                         </form>
                     </div>
                 </div>

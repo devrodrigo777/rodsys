@@ -17,6 +17,18 @@ class LoginAPI extends ResourceController
     use ResponseTrait;
 
     /**
+     * Permissions model instance.
+     *
+     * @var \Modules\Permissoes\Models\PermissoesModel
+     */
+    protected $permissionsModel;
+
+    public function __construct()
+    {
+        $this->permissionsModel = new PermissoesModel();
+    }
+
+    /**
      * Retorna a lista de usuários com dados de suas empresas e cargos.
      * @return ResponseInterface
      */
@@ -26,7 +38,7 @@ class LoginAPI extends ResourceController
 
         $permissionsModel = new PermissoesModel();
         
-        if(!$permissionsModel->user_has_permission('user.view')
+        if(!$permissionsModel->user_has_permission('mod.user.view')
             && !$permissionsModel->user_is_superadmin())
         {
             return $this->failForbidden('You do not have permission to view users.');
@@ -69,13 +81,13 @@ class LoginAPI extends ResourceController
                     $is_global = $row['is_global'];
                     $html_actions = '';
 
-                    if($permissionsModel->user_has_permission('user.edit')) {
+                    if($permissionsModel->user_has_permission('mod.user.edit')) {
                     $html_actions .= '
                         <button class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="Editar" onclick="editUser(' . $row['id_usuario_login'] . ')"><i class="fa fa-edit"></i></button>
                         ';
                     }
 
-                    if($permissionsModel->user_has_permission('user.delete')) {
+                    if($permissionsModel->user_has_permission('mod.user.delete')) {
                         if ($is_global) {
                             $html_actions .= '
                                 <button class="btn btn-sm btn-danger" data-bs-toggle="tooltip" title="Remover" onclick="deleteUser(' . $id_pessoa . ')"><i class="fa fa-trash"></i></button>
@@ -97,6 +109,8 @@ class LoginAPI extends ResourceController
     /** Atualização de usuarios existentes */
     public function update($id_usuario = null)
     {
+       
+
         // Este endpoint vem de um formulário — usar redirecionamentos com flashdata
         if (!is_numeric($id_usuario)) {
             session()->setFlashdata('user.feedback.error', 'ID de usuário inválido.');
@@ -106,7 +120,7 @@ class LoginAPI extends ResourceController
         // Verifica se tem permissão para editar
         $permissoesModel = new PermissoesModel();
 
-        if (! $permissoesModel->user_has_permission('user.edit')) {
+        if (! $permissoesModel->user_has_permission('mod.user.edit')) {
             session()->setFlashdata('user.feedback.error', 'Você não tem permissão para editar usuários.');
             return redirect()->to('dashboard/usuarios');
         }
@@ -188,6 +202,7 @@ class LoginAPI extends ResourceController
      */
     public function deleteUser($id_pessoa= null): ResponseInterface
     {
+        
         if (!is_numeric($id_pessoa)) {
             return $this->fail('Invalid user ID provided.', ResponseInterface::HTTP_BAD_REQUEST);
         }
@@ -195,7 +210,7 @@ class LoginAPI extends ResourceController
         // Verifica se o tem permissão para deletar
         $permissoesModel = new PermissoesModel();
 
-        if (! $permissoesModel->user_has_permission('user.delete')) {
+        if (! $permissoesModel->user_has_permission('mod.user.delete') || ! $permissoesModel->user_is_superadmin()) {
             return $this->failForbidden('You do not have permission to delete users.');
         }
 
@@ -234,6 +249,12 @@ class LoginAPI extends ResourceController
      */
     public function createCompany(): ResponseInterface
     {
+        // Verificar se o usuario possui permissões para criar uma nova empresa
+        if(!$this->permissionsModel->user_has_permission('mod.empresas.create') || !$this->permissionsModel->user_is_superadmin()) {
+            $this->fail('Você não tem permissão para criar uma nova empresa.', 403);
+            exit;
+        }
+
         $rules = [
             'cnpj'        => 'required|exact_length[14]|is_unique[empresas.cnpj]',
             'razao_social' => 'required|min_length[3]|max_length[255]',
@@ -263,6 +284,12 @@ class LoginAPI extends ResourceController
      */
     public function createUser(): ResponseInterface
     {
+        // Verificar se o usuario possui permissões para criar u novo usuário.
+        if(!$this->permissionsModel->user_has_permission('mod.user.create') || !$this->permissionsModel->user_is_superadmin()) {
+            $this->fail('Você não tem permissão para criar um  novo usuário.', 403);
+            exit;
+        }
+
         $rules = [
             'usuario' => 'required|min_length[3]|max_length[100]',
             'id_empresa' => 'required|integer',

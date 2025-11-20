@@ -28,6 +28,7 @@ class AuthService
     {
         $user = $this->loginModel->where('id_empresa', $idEmpresa)
                                ->where('usuario', $usuario)
+                               ->where('ativo', 1)
                                ->first();
 
         if (! $user || ! $this->passlib->verifyPassword($senha, $user['senha_hash'])) {
@@ -35,6 +36,28 @@ class AuthService
         }
 
         return $user;
+    }
+
+    public function validate_session()
+    {
+        $session = session();
+        $id_usuario = $session->get('usuario');
+        $id_empresa = $session->get('id_empresa');
+
+        if (!$id_usuario || !$id_empresa) {
+            return false;
+        }
+
+        $user = $this->loginModel->where('id_usuario', $id_usuario)->first();
+
+        if ($user === null) {
+            return false;
+        }
+
+        $empresaModel = model('Modules\Login\Models\EmpresaModel');
+        $empresa = $empresaModel->where('id_empresa', $id_empresa)->first();
+
+        return $empresa !== null && $empresa['plano_ativo'] == 1;
     }
 
     public function is_logged_in()

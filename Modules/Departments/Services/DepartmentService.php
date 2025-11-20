@@ -154,7 +154,7 @@ class DepartmentService
             }
 
             // Check if department is global or readonly
-            if ($department['is_global'] == 1 || $department['readonly'] == 1) {
+            if ($department['readonly'] == 1) {
                 return [
                     'success' => false,
                     'message' => 'Não é permitido editar departamentos globais ou protegidos.'

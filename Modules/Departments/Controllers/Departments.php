@@ -10,17 +10,22 @@ use Modules\Departments\Services\DepartmentService;
 class Departments extends BaseController
 {
     protected $departmentModel;
+    protected $permissionsModel;
 
     public function __construct()
     {
         $this->departmentModel = new DepartmentModel();
+        $this->permissionsModel = new \Modules\Permissoes\Models\PermissoesModel();
     }
 
     public function novo()
     {
         $dashboard = new Dashboard();
 
-        
+        // Verificar permissões de criar um novo departamento aqui, se necessário
+        if(!$this->permissionsModel->user_has_permission('mod.departments.create') && !$this->permissionsModel->user_is_superadmin()) {
+            return redirect()->to('dashboard/departamentos')->with('error', 'Você não tem permissão para criar um novo departamento.');
+        }
 
         $dashboard->__set_module_vars([
             'module_view_data' => [
@@ -94,6 +99,11 @@ class Departments extends BaseController
     {
         $dashboard = new Dashboard();
 
+        // Verificar permissões de editar o departamento aqui, se necessário
+        if(!$this->permissionsModel->user_has_permission('mod.departments.edit') && !$this->permissionsModel->user_is_superadmin()) {
+            return redirect()->to('/departments')->with('error', 'Você não tem permissão para editar este departamento.');
+        }
+
         $dashboard->__set_module_vars([
             'module_view_data' => [
                 'service_view' => new DepartmentService('renderCreateEditDepartment', $id),
@@ -115,6 +125,12 @@ class Departments extends BaseController
 
     public function update($id)
     {
+        
+        // Verificar permissões de atualizar o departamento aqui, se necessário
+        if(!$this->permissionsModel->user_has_permission('mod.departments.edit') || !$this->permissionsModel->user_is_superadmin()) {
+            return redirect()->to('/departments')->with('error', 'Você não tem permissão para editar este departamento.');
+        }
+
         if (!$this->validate([
             'department_name' => 'required|min_length[3]|max_length[255]',
             'department_description' => 'max_length[500]'

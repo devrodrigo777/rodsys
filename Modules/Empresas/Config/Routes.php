@@ -7,7 +7,7 @@ use CodeIgniter\Router\RouteCollection;
  */
 $permissoesModel = new \Modules\Permissoes\Models\PermissoesModel();
 
-if (! $permissoesModel->user_has_permission('empresas.view')
+if (! $permissoesModel->user_has_permission('mod.empresas.view')
     && ! $permissoesModel->user_is_superadmin()) {
     $forbiddenPermissionCallback = function(){
         $session = session();
@@ -16,6 +16,11 @@ if (! $permissoesModel->user_has_permission('empresas.view')
     };
 
     $routes->group('dashboard/empresas', function($routes) use ($forbiddenPermissionCallback) {
+        $routes->match(['get', 'post', 'put', 'delete'], '/', $forbiddenPermissionCallback);
+        $routes->match(['get', 'post', 'put', 'delete'], '/(:any)', $forbiddenPermissionCallback);
+    });
+
+     $routes->group('empresas/api', function($routes) use ($forbiddenPermissionCallback) {
         $routes->match(['get', 'post', 'put', 'delete'], '/', $forbiddenPermissionCallback);
         $routes->match(['get', 'post', 'put', 'delete'], '/(:any)', $forbiddenPermissionCallback);
     });

@@ -18,8 +18,8 @@ class Menu extends ModulesMenu
 
         $permissoesModel = new PermissoesModel();
 
-        // Verifica se o usuário tem permissão para visualizar usuários
-        if ($permissoesModel->user_has_permission('company.view')  || $permissoesModel->user_is_superadmin()) {
+        // Verifica se o usuário tem permissão para visualizar empresas
+        if ($permissoesModel->user_has_permission('mod.empresas.view')  || $permissoesModel->user_is_superadmin()) {
             $menu->addMenuItem('Empresas', 'dashboard/empresas', 'fa-solid fa-building', null, 'dashboard/empresas/*');
         }
 

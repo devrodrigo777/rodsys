@@ -20,9 +20,9 @@ class EmpresaModel extends Model
     {
         $permissoes_model = new PermissoesModel();
 
-        if ($permissoes_model->user_has_permission('user.company.listall')) {
+        if ($permissoes_model->user_has_permission('mod.user.company.listall') || $permissoes_model->user_is_superadmin()) {
             return $this->findAll();
-        } elseif ($permissoes_model->user_has_permission('user.company.listme')) {
+        } elseif ($permissoes_model->user_has_permission('mod.user.company.listme') || $permissoes_model->user_is_superadmin()) {
             // user.company.listme retorna apenas a empresa do usuário logado
             $id_empresa_logada = session()->get('id_empresa');
             return $this->where('id_empresa', $id_empresa_logada)->findAll();

@@ -10,8 +10,25 @@ class API extends ResourceController
 {
     use ResponseTrait;
 
+    /**
+     * Permissions model instance.
+     *
+     * @var \Modules\Permissoes\Models\PermissoesModel
+     */
+    protected $permissionsModel;
+
+    public function __construct()
+    {
+        $this->permissionsModel = new \Modules\Permissoes\Models\PermissoesModel();
+    }
+
     public function create()
     {
+        // Se não tiver permissão para criar uma empresa, redireciona com erro
+        if(!$this->permissionsModel->user_has_permission('mod.empresas.create') || !$this->permissionsModel->user_is_superadmin()) {
+            return redirect()->to('/dashboard/empresas')->with('error', 'Você não tem permissão para criar uma nova empresa.');
+        }
+
         $nome = $_POST['inputRazaoSocial'] ?? null;
         $cnpj = $_POST['inputCnpj'] ?? null;
         $plano_ativo = $_POST['inputPlanoAtivo'] ?? 0;
@@ -30,6 +47,11 @@ class API extends ResourceController
 
     public function update($id = null)
     {
+        // Se não tiver permissão para editar uma empresa, redireciona com erro
+        if(!$this->permissionsModel->user_has_permission('mod.empresas.edit') && !$this->permissionsModel->user_is_superadmin()) {
+            return redirect()->to('/dashboard/empresas')->with('error', 'Você não tem permissão para editar esta empresa.');
+        }
+
         if (!$id) {
             session()->setFlashdata('error', 'Empresa não encontrada.');
             return redirect()->to('dashboard/empresas');
@@ -53,6 +75,11 @@ class API extends ResourceController
 
     public function delete($id = null)
     {
+        // Verificar permissões de deletar a empresa aqui, se necessário
+        if(!$this->permissionsModel->user_has_permission('mod.empresas.delete') && !$this->permissionsModel->user_is_superadmin()) {
+            return $this->fail('Você não tem permissão para deletar esta empresa.', 403);
+        }
+
         if (!$id) {
             return $this->failNotFound('Empresa não encontrada.');
         }

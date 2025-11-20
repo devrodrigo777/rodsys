@@ -22,7 +22,7 @@ class Menu extends ModulesMenu
         $permissoesModel = new PermissoesModel();
 
         // Verifica se o usuário tem permissão para visualizar usuários
-        if ($permissoesModel->user_has_permission('user.view')  || $permissoesModel->user_is_superadmin()) {
+        if ($permissoesModel->user_has_permission('mod.user.view')  || $permissoesModel->user_is_superadmin()) {
             $login_menu->addMenuItem('Acessos', 'acessos', 'fa-solid fa-key', null, 'dashboard/acessos/*');
             $login_menu->addMenuItem('Usuários', 'dashboard/acessos/usuarios', 'fa-solid fa-users', 'Acessos');
         }

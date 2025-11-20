@@ -98,7 +98,8 @@ $(document).ready(function(){
                     confirmButtonText: 'OK'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        location.reload();
+                        // reload without get params
+                        window.location.href = window.location.pathname;
                     }
                 });
             },

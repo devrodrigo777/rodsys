@@ -20,9 +20,9 @@ class Menu extends ModulesMenu
         $login_menu = new ModulesMenu();
 
         $permissoesModel = new PermissoesModel();
-
-        // Verifica se o usuário tem permissão para visualizar usuários
-        if ($permissoesModel->user_has_permission('departments.view') || $permissoesModel->user_is_superadmin()) {
+        
+        // Verifica se o usuário tem permissão para visualizar departamentos
+        if ($permissoesModel->user_has_permission('mod.departments.view') || $permissoesModel->user_is_superadmin()) {
             $login_menu->addMenuItem('Departamentos', 'dashboard/departamentos', 'fa-solid fa-building-user', null, 'dashboard/departamentos/*');
         }
         

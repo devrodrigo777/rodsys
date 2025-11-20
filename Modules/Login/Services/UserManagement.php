@@ -27,7 +27,7 @@ class UserManagement
 
     protected function renderManageUsers($data = [])
     {
-        $data['lista_empresas'] = (new EmpresaModel())->Me();
+        $data['lista_empresas'] = (new EmpresaModel())->listForMe();
         $data['lista_cargos'] = (new CargosModel())->listForMe();
 
         return module_view('Login', 'Login/ManageUsers', $data);
@@ -38,7 +38,7 @@ class UserManagement
         
         // Check permission
         // $permissoes_model = new PermissoesModel();
-        // if (!$permissoes_model->user_has_permission('user.create')) {
+        // if (!$permissoes_model->user_has_permission('mod.user.create')) {
         //     return '';
         // }
 
@@ -80,7 +80,7 @@ class UserManagement
         try {
             // Check permission
             $permissionsModel = new PermissoesModel();
-            if (!$permissionsModel->user_has_permission('user.create')) {
+            if (!$permissionsModel->user_has_permission('mod.user.create')) {
                 return [
                     'success' => false,
                     'message' => 'Você não tem permissão para criar usuários.'
@@ -157,7 +157,7 @@ class UserManagement
         try {
             // Check permission
             $permissionsModel = new PermissoesModel();
-            if (!$permissionsModel->user_has_permission('user.edit')) {
+            if (!$permissionsModel->user_has_permission('mod.user.edit')) {
                 return [
                     'success' => false,
                     'message' => 'Você não tem permissão para editar usuários.'
@@ -235,7 +235,7 @@ class UserManagement
         try {
             // Check permission
             $permissionsModel = new PermissoesModel();
-            if (!$permissionsModel->user_has_permission('user.delete')) {
+            if (!$permissionsModel->user_has_permission('mod.user.delete')) {
                 return [
                     'success' => false,
                     'message' => 'Você não tem permissão para deletar usuários.'

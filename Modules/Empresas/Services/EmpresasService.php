@@ -46,6 +46,7 @@ class EmpresasService
     protected function renderCreateEditEmpresa($data = [])
     {
         $data['is_editing'] = false;
+        $data['permissions'] = new PermissoesModel();
 
         if ($this->params) {
             $empresasModel = new EmpresasModel();
@@ -70,7 +71,7 @@ class EmpresasService
         try {
             // Validate permissions
             $permissionsModel = new PermissoesModel();
-            if (!$permissionsModel->user_has_permission('empresas.create') && !$permissionsModel->user_is_superadmin()) {
+            if (!$permissionsModel->user_has_permission('mod.empresas.create') && !$permissionsModel->user_is_superadmin()) {
                 return [
                     'success' => false,
                     'message' => 'Você não tem permissão para criar empresas.'
@@ -125,7 +126,7 @@ class EmpresasService
         try {
             // Validate permissions
             $permissionsModel = new PermissoesModel();
-            if (!$permissionsModel->user_has_permission('empresas.edit') && !$permissionsModel->user_is_superadmin()) {
+            if (!$permissionsModel->user_has_permission('mod.empresas.edit') && !$permissionsModel->user_is_superadmin()) {
                 return [
                     'success' => false,
                     'message' => 'Você não tem permissão para editar empresas.'
@@ -158,6 +159,7 @@ class EmpresasService
                 'plano_ativo' => (int) $plano_ativo,
             ];
 
+
             $empresasModel->update($id_empresa, $empresaData);
 
             $db->transComplete();
@@ -187,7 +189,7 @@ class EmpresasService
         try {
             // Validate permissions
             $permissionsModel = new PermissoesModel();
-            if (!$permissionsModel->user_has_permission('empresas.delete') && !$permissionsModel->user_is_superadmin()) {
+            if (!$permissionsModel->user_has_permission('mod.empresas.delete') && !$permissionsModel->user_is_superadmin()) {
                 return [
                     'success' => false,
                     'message' => 'Você não tem permissão para deletar empresas.'
@@ -203,6 +205,36 @@ class EmpresasService
                     'success' => false,
                     'message' => 'Empresa não encontrada.'
                 ];
+            }
+
+            // verificaremos se existem usuarios, cargos e permissões vinculadas a esta empresa antes de deletar
+            //  Se existirem, teremos que deletar tudo que tem associação a essa empresa, pois tudo é foreign key
+            // Check for associated users, roles, and permissions
+            $usuariosModel = new \Modules\Login\Models\PessoasModel();
+            $loginModel = new \Modules\Login\Models\LoginModel();
+            $cargosModel = new \Modules\Departments\Models\DepartmentModel();
+
+            $usuariosAssociados = $usuariosModel->where('id_empresa', $id_empresa)->findAll();
+            $cargosAssociados = $cargosModel->where('id_empresa', $id_empresa)->findAll();
+            $loginsAssociados = $loginModel->where('id_empresa', $id_empresa)->findAll();
+
+            if($loginsAssociados) {
+                foreach($loginsAssociados as $login) {
+                    $loginModel->delete($login['id_usuario']);
+                }
+            }
+
+            // Delete associated records in cascade
+            if ($usuariosAssociados) {
+                foreach ($usuariosAssociados as $usuario) {
+                    $usuariosModel->delete($usuario['id_usuario']);
+                }
+            }
+
+            if ($cargosAssociados) {
+                foreach ($cargosAssociados as $cargo) {
+                    $cargosModel->delete($cargo['id_cargo']);
+                }
             }
 
             // Delete the empresa
