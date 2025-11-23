@@ -118,6 +118,34 @@ Antes de fazer PR, certifique-se de:
    $empresa = $this->model->where('id_empresa_donwer', $id_empresa)->find($id);
    ```
 
+5. **Validar que usuário não opera em si mesmo** (delete/editar)
+   ```php
+   $id_usuario_logado = session()->get('usuario');
+   if ($id_usuario_logado == $id_usuario_target) {
+       return $this->fail('Você não pode se deletar', 403);
+   }
+   ```
+
+6. **Usar permissões granulares em operações críticas**
+   ```php
+   // Criar departamento permite APENAS permissões que o criador possui
+   if($permissionsModel->user_is_superadmin()) {
+       $data['permissoes'] = $permissionsModel->findAll();
+   } else {
+       $data['permissoes'] = $permissionsModel->listMyPermissions();
+   }
+   ```
+
+7. **Filtrar busca por empresa em DataTables**
+   ```php
+   // LoginAPI::userList() - exemplo correto
+   if (! $this->permissionsModel->user_is_superadmin()) {
+       $whereClause = "e.id_empresa = " . intval($id_empresa_logada);
+   }
+   // Busca em múltiplos campos
+   $whereClause .= " AND (pessoas.nome_completo LIKE '%$search%' OR ...)";
+   ```
+
 ---
 
 ## 💻 Padrões de Codificação

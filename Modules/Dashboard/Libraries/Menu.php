@@ -21,6 +21,7 @@ class Menu extends ModulesMenu
         $dashboard_menu->addMenuHeader('Principal');
 
         $dashboard_menu->addMenuItem('Painel', 'dashboard', 'fa-solid fa-table-columns');
+        $dashboard_menu->addMenuItem('Módulos', 'dashboard/modulos', 'fa-solid fa-boxes-stacked', null, 'dashboard/modulos/*');
 
         
         return $dashboard_menu;

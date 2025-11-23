@@ -147,6 +147,7 @@ rodsys/
 - ✅ Módulo Login (CRUD usuários)
 - ✅ Módulo Departments (CRUD cargos + permissões)
 - ✅ Módulo Empresas (CRUD com CNPJ formatter)
+- ✅ Dashboard Modules (Visualização de módulos por empresa)
 - ✅ Sistema de permissões (multi-tenant)
 - ✅ DataTables server-side
 - ✅ Validação CNPJ/CPF dinâmica
@@ -156,8 +157,10 @@ rodsys/
 ### Padrões
 - ✅ Model-Service-Controller (MSC)
 - ✅ Flashdata com redirects
-- ✅ Validação de permissões
+- ✅ Validação de permissões granulares
 - ✅ Segurança (hash, sanitização, CSRF)
+- ✅ Proteção de usuário logado
+- ✅ Multi-tenant isolado por empresa
 - ✅ Batch inserts
 - ✅ Menu dinâmico
 

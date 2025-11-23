@@ -130,12 +130,13 @@
 
         <?php
             // Verificar se há o flashdata success para exibir o swal.fire pro usuario
-            if(session()->getFlashdata('user.feedback.success')):
-                $message = session()->getFlashdata('user.feedback.success');
+            $checkIcon = session()->getFlashdata('user.feedback.icon');
+            if(session()->getFlashdata('user.feedback')):
+                $message = session()->getFlashdata('user.feedback');
         ?>
 
             Swal.fire({
-                icon: 'success',
+                icon: '<?= (esc($checkIcon)) ?? "success" ?>',
                 text: '<?= esc($message) ?>',
                 timer: 3000,
                 timerProgressBar: true,

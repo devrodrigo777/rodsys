@@ -6,17 +6,8 @@
                     <div class="col-auto mb-3">
                         <h1 class="page-header-title">
                             <div class="page-header-icon"><i data-feather="user"></i></div>
-                            Gerenciar Departamentos
+                            Gerenciar Módulos
                         </h1>
-                    </div>
-                    <div class="col-12 col-xl-auto mb-3">
-                        <?php // Verificar permissões de criar um novo departamento aqui, se necessário
-                        if($permissoes->user_has_permission('mod.departments.create') || $permissoes->user_is_superadmin()): ?>
-                        <a class="btn btn-sm btn-light text-primary" href="<?=base_url('dashboard/departamentos/novo')?>">
-                            <i class="me-1" data-feather="user-plus"></i>
-                            Novo Departamento
-                        </a>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -44,14 +35,13 @@
     // Verificar se há o flashdata success para exibir o swal.fire pro usuario
     if(
         session()->getFlashdata('department.feedback.success')):
-
-        $icon = session()->getFlashdata('department.feedback.icon') ?? 'success';
+    
         $message = session()->getFlashdata('department.feedback.success');
     ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         Swal.fire({
-            icon: '<?= esc($icon); ?>',
+            icon: 'success',
             text: '<?= esc($message) ?>',
             timer: 3000,
             timerProgressBar: true,

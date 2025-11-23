@@ -36,10 +36,9 @@ class LoginAPI extends ResourceController
     {
         require_once APPPATH . 'ThirdParty/ssp.class.php';
 
-        $permissionsModel = new PermissoesModel();
-        
-        if(!$permissionsModel->user_has_permission('mod.user.view')
-            && !$permissionsModel->user_is_superadmin())
+        $permissionsModel = $this->permissionsModel;
+        if(!$this->permissionsModel->user_has_permission('mod.user.view')
+            && !$this->permissionsModel->user_is_superadmin())
         {
             return $this->failForbidden('You do not have permission to view users.');
         }
@@ -55,6 +54,9 @@ class LoginAPI extends ResourceController
         $table = 'pessoas';
         $primaryKey = 'id_pessoa';
 
+        
+
+        $whereClause = null;
         // Defina a Cláusula FROM/JOIN que você precisa:
         $joinClause = "
             JOIN login lg ON pessoas.id_usuario_login = lg.id_usuario
@@ -62,7 +64,18 @@ class LoginAPI extends ResourceController
             JOIN empresas e ON pessoas.id_empresa = e.id_empresa
         ";
 
-        
+        // filtrar somente usuários da empresa do usuário logado, se não for superadmin
+        if (! $this->permissionsModel->user_is_superadmin() && !$this->permissionsModel->user_has_permission('mod.user.company.listall')) {
+            $id_empresa_logada = session()->get('id_empresa');
+            $whereClause = "e.id_empresa = " . intval($id_empresa_logada);
+        }
+
+        // obter o valor de busca
+        $whereClause .= ($_GET['search']['value'] ?? '') !== '' ? " AND (
+            pessoas.nome_completo LIKE '%" . $db->escapeLikeString($_GET['search']['value']) . "%' OR
+            c.nome LIKE '%" . $db->escapeLikeString($_GET['search']['value']) . "%' OR
+            e.razao_social LIKE '%" . $db->escapeLikeString($_GET['search']['value']) . "%'
+        )" : null;
 
         $columns = array(
             [ 'db' => 'id_usuario_login', 'dt' => 9 ],
@@ -81,18 +94,24 @@ class LoginAPI extends ResourceController
                     $is_global = $row['is_global'];
                     $html_actions = '';
 
-                    if($permissionsModel->user_has_permission('mod.user.edit')) {
-                    $html_actions .= '
-                        <button class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="Editar" onclick="editUser(' . $row['id_usuario_login'] . ')"><i class="fa fa-edit"></i></button>
-                        ';
-                    }
+                    // Antes de exibir os menus, verificaremos se o usuário que
+                    // ele está visualizando não é ele mesmo (não pode se deletar)
+                    $id_usuario_logado = session()->get('usuario');
 
-                    if($permissionsModel->user_has_permission('mod.user.delete')) {
-                        if ($is_global) {
-                            $html_actions .= '
-                                <button class="btn btn-sm btn-danger" data-bs-toggle="tooltip" title="Remover" onclick="deleteUser(' . $id_pessoa . ')"><i class="fa fa-trash"></i></button>
+                    if($id_usuario_logado != $row['id_usuario_login']) {
+                        if($permissionsModel->user_has_permission('mod.user.edit')) {
+                        $html_actions .= '
+                            <button class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="Editar" onclick="editUser(' . $row['id_usuario_login'] . ')"><i class="fa fa-edit"></i></button>
                             ';
-                        }   
+                        }
+
+                        if($permissionsModel->user_has_permission('mod.user.delete')) {
+                            if ($is_global) {
+                                $html_actions .= '
+                                    <button class="btn btn-sm btn-danger" data-bs-toggle="tooltip" title="Remover" onclick="deleteUser(' . $id_pessoa . ')"><i class="fa fa-trash"></i></button>
+                                ';
+                            }   
+                        }
                     }
 
 
@@ -101,7 +120,7 @@ class LoginAPI extends ResourceController
             ]
         );
 
-        $result = \SSP::complex($_GET, $db_details, $table, $primaryKey, $columns, null, null, $joinClause);
+        $result = \SSP::complex($_GET, $db_details, $table, $primaryKey, $columns, $whereClause, null, $joinClause);
 
         return $this->respond($result);
     }
@@ -113,7 +132,7 @@ class LoginAPI extends ResourceController
 
         // Este endpoint vem de um formulário — usar redirecionamentos com flashdata
         if (!is_numeric($id_usuario)) {
-            session()->setFlashdata('user.feedback.error', 'ID de usuário inválido.');
+            session()->setFlashdata('user.feedback', 'ID de usuário inválido.');
             return redirect()->back()->withInput();
         }
 
@@ -121,19 +140,39 @@ class LoginAPI extends ResourceController
         $permissoesModel = new PermissoesModel();
 
         if (! $permissoesModel->user_has_permission('mod.user.edit')) {
-            session()->setFlashdata('user.feedback.error', 'Você não tem permissão para editar usuários.');
-            return redirect()->to('dashboard/usuarios');
+            session()->setFlashdata('user.feedback', 'Você não tem permissão para editar usuários.');
+            return redirect()->to('dashboard/acessos/usuarios');
         }
 
         $loginModel = new LoginModel();
         $pessoasModel = new PessoasModel();
+        $superadmin = $permissoesModel->user_is_superadmin();
 
+        // Verificaremos se o usuario que ele está tentando editar é ele mesmo
+        $id_usuario_logado = session()->get('usuario');
+        $where_id_empresa = $superadmin ? ['id_empresa >' => 0] : ['id_empresa' => session()->get('id_empresa')];
+
+        // echo $id_empresa_logada;die();
+        if($id_usuario_logado == $id_usuario) {
+            session()->setFlashdata('user.feedback', 'Você não pode editar seu próprio usuário por este formulário.');
+            return redirect()->to('dashboard/acessos/usuarios');
+        }
+
+        
         // Busca o usuário de login (por id_usuario)
-        $usuario = $loginModel->where('id_usuario', $id_usuario)->first();
+        // Para prevenir de editar usuario que nao faz parte da equipe caso nao seja  admin
+        // Iremos acrescentar uma verificação extra
+        // Iremos prevenir também que ele edite ele mesmo.
+        $usuario = $loginModel
+        ->where('id_usuario', $id_usuario)
+        ->where($where_id_empresa)
+        // whereNot usuario seja ele mesmo
+        ->where('id_usuario !=', $id_usuario_logado)
+        ->first();
 
         if (!$usuario) {
-            session()->setFlashdata('user.feedback.error', 'Usuário não encontrado.');
-            return redirect()->to('dashboard/usuarios');
+            session()->setFlashdata('user.feedback', 'Usuário não encontrado.');
+            return redirect()->to('dashboard/acessos/usuarios');
         }
 
         // Recebe parâmetros via POST
@@ -187,12 +226,12 @@ class LoginAPI extends ResourceController
 
             $db->transCommit();
 
-            session()->setFlashdata('user.feedback.success', 'Usuário atualizado com sucesso.');
+            session()->setFlashdata('user.feedback', 'Usuário atualizado com sucesso.');
             return redirect()->to('dashboard/acessos/usuarios');
 
         } catch (\Exception $e) {
             $db->transRollback();
-            session()->setFlashdata('user.feedback.error', 'Erro ao atualizar usuário: ' . $e->getMessage());
+            session()->setFlashdata('user.feedback', 'Erro ao atualizar usuário: ' . $e->getMessage());
             return redirect()->back()->withInput();
         }
     }
@@ -210,14 +249,25 @@ class LoginAPI extends ResourceController
         // Verifica se o tem permissão para deletar
         $permissoesModel = new PermissoesModel();
 
-        if (! $permissoesModel->user_has_permission('mod.user.delete') || ! $permissoesModel->user_is_superadmin()) {
+        if (! $permissoesModel->user_has_permission('mod.user.delete') && ! $permissoesModel->user_is_superadmin()) {
             return $this->failForbidden('You do not have permission to delete users.');
         }
 
         $pessoasModel = new PessoasModel();
         $loginModel = new LoginModel();
 
-        $pessoa = $pessoasModel->find($id_pessoa);
+        // Se não for superadmin, garantir que o usuário pertence à mesma empresa
+        // E também garantir que não seja ele mesmo.
+        if (! $permissoesModel->user_is_superadmin()) {
+            $id_empresa_logada = session()->get('id_empresa');
+            $pessoa = $pessoasModel->where('id_empresa', $id_empresa_logada)
+                                   ->where('id_pessoa', $id_pessoa)
+                                   // whereNot seja ele mesmo
+                                   ->where('id_usuario_login !=', session()->get('usuario'))
+                                   ->first();
+        } else {
+            $pessoa = $pessoasModel->find($id_pessoa);
+        }
 
         if (!$pessoa) {
             return $this->failNotFound('User not found');
@@ -250,7 +300,7 @@ class LoginAPI extends ResourceController
     public function createCompany(): ResponseInterface
     {
         // Verificar se o usuario possui permissões para criar uma nova empresa
-        if(!$this->permissionsModel->user_has_permission('mod.empresas.create') || !$this->permissionsModel->user_is_superadmin()) {
+        if(!$this->permissionsModel->user_has_permission('mod.empresas.create') && !$this->permissionsModel->user_is_superadmin()) {
             $this->fail('Você não tem permissão para criar uma nova empresa.', 403);
             exit;
         }
@@ -285,7 +335,7 @@ class LoginAPI extends ResourceController
     public function createUser(): ResponseInterface
     {
         // Verificar se o usuario possui permissões para criar u novo usuário.
-        if(!$this->permissionsModel->user_has_permission('mod.user.create') || !$this->permissionsModel->user_is_superadmin()) {
+        if(!$this->permissionsModel->user_has_permission('mod.user.create') && !$this->permissionsModel->user_is_superadmin()) {
             $this->fail('Você não tem permissão para criar um  novo usuário.', 403);
             exit;
         }

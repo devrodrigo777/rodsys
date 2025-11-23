@@ -8,7 +8,7 @@ class PermissoesModel extends Model
 {
     protected $table = 'permissoes';
     protected $primaryKey = 'id_permissao';
-    protected $allowedFields = ['slug', 'descricao', 'cliente_configuravel', 'is_superadmin'];
+    protected $allowedFields = ['slug', 'descricao', 'cliente_configuravel', 'grupo', 'is_superadmin'];
 
     protected $current_permissions = [];
 
@@ -24,6 +24,30 @@ class PermissoesModel extends Model
     public function getPermissoesBySlug($slug)
     {
         return $this->where('slug', $slug)->first();
+    }
+
+    public function getPermissionsByCargo($id_cargo, $select = null, $whereClause = null)
+    {
+        $select = $select ?? 'cargos_permissoes.id_permissao, permissoes.slug';
+        $whereClause = $whereClause ?? ['cargos_permissoes.id_cargo' => intval($id_cargo)];
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('cargos_permissoes')
+            ->select($select)
+            ->join('permissoes', 'permissoes.id_permissao = cargos_permissoes.id_permissao')
+            ->join('cargos', 'cargos.id_cargo = cargos_permissoes.id_cargo');
+
+            
+        foreach( (array)$whereClause as $key => $value ) {
+            if (is_int($key)) {
+                $builder->where($value);
+            } else {
+                $builder->where($key, $value);
+            }
+        }
+
+        $result = $builder->get()->getResultArray();
+        return $result;
     }
 
     public function getAllPermissions()
@@ -44,9 +68,10 @@ class PermissoesModel extends Model
         // Implement your logic to retrieve the permissions for the logged-in user
         // This is a placeholder implementation and should be replaced with actual logic
         $db = \Config\Database::connect();
-        $builder = $db->table('cargos_permissoes')->select('permissoes.slug, permissoes.descricao');
+        $builder = $db->table('cargos_permissoes')->select('permissoes.id_permissao, permissoes.slug, permissoes.descricao, permissoes.grupo');
         $builder->join('permissoes', 'permissoes.id_permissao = cargos_permissoes.id_permissao');
         $builder->join('pessoas', 'pessoas.id_cargo = cargos_permissoes.id_cargo');
+        $builder->orderBy('permissoes.grupo');
         $builder->where('pessoas.id_usuario_login', $user_id);
         $result = $builder->get();
 

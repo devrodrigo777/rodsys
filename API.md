@@ -12,7 +12,72 @@ A autenticação é validada em nível de controller antes de processar requests
 
 ---
 
-## 👥 Usuários API
+## 🎛️ Dashboard Modules API
+
+**Base URL**: `/dashboard/modules/api`
+
+### 1. Listar Módulos (Global)
+
+```http
+GET /dashboard/modules/api/list
+```
+
+**Response**:
+```json
+[
+  {
+    "id": 1,
+    "name": "Login",
+    "description": "Autenticação e gerenciamento de usuários",
+    "controller": "Modules\\Login\\Controllers\\Login"
+  },
+  {
+    "id": 2,
+    "name": "Empresas",
+    "description": "Gerenciamento de empresas",
+    "controller": "Modules\\Empresas\\Controllers\\Empresas"
+  }
+]
+```
+
+**Permissão Requerida**: `mod.modules.view`
+
+---
+
+### 2. Listar Módulos por Empresa
+
+```http
+GET /dashboard/modules/api/list/:company_id
+```
+
+**Path Parameters**:
+- `:company_id` = `id_empresa`
+
+**Response**:
+```json
+{
+  "company_id": 1,
+  "company_name": "Acme Corp",
+  "modules": [
+    {
+      "id": 1,
+      "name": "Login",
+      "enabled": true
+    },
+    {
+      "id": 2,
+      "name": "Empresas",
+      "enabled": true
+    }
+  ]
+}
+```
+
+**Permissão Requerida**: `mod.modules.view`
+
+---
+
+## 👥 Usuários API (Melhorias)
 
 **Base URL**: `/login/api/usuarios`
 
@@ -26,7 +91,12 @@ GET /login/api/usuarios/list
 - `draw`: número sequencial da requisição
 - `start`: índice de início
 - `length`: quantidade de registros por página
-- `search[value]`: termo de busca
+- `search[value]`: termo de busca (busca em nome, cargo, empresa)
+
+**Filtros Automáticos**:
+- Superadmin: vê todos os usuários
+- Usuário comum: vê apenas usuários da sua empresa
+- Permissão `mod.user.company.listall`: permite listar usuários de todas as empresas
 
 **Response**:
 ```json
@@ -46,7 +116,7 @@ GET /login/api/usuarios/list
 }
 ```
 
-**Permissão Requerida**: `user.view`
+**Permissão Requerida**: `mod.user.view`
 
 ---
 
@@ -385,9 +455,11 @@ if (!$permissionsModel->user_has_permission('recurso.acao')) {
 ```
 
 Permissões disponíveis:
-- `user.view`, `user.create`, `user.edit`, `user.delete`
-- `empresas.view`, `empresas.create`, `empresas.edit`, `empresas.delete`
-- `departments.view`, `departments.create`, `departments.edit`, `departments.delete`
+- `mod.user.view`, `mod.user.create`, `mod.user.edit`, `mod.user.delete`
+- `mod.user.company.listall` - permite visualizar usuários de todas as empresas
+- `mod.empresas.view`, `mod.empresas.create`, `mod.empresas.edit`, `mod.empresas.delete`
+- `mod.departments.view`, `mod.departments.create`, `mod.departments.edit`, `mod.departments.delete`
+- `mod.modules.view` - visualizar módulos do sistema
 
 ---
 

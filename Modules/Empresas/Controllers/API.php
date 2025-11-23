@@ -25,7 +25,7 @@ class API extends ResourceController
     public function create()
     {
         // Se não tiver permissão para criar uma empresa, redireciona com erro
-        if(!$this->permissionsModel->user_has_permission('mod.empresas.create') || !$this->permissionsModel->user_is_superadmin()) {
+        if(!$this->permissionsModel->user_has_permission('mod.empresas.create') && !$this->permissionsModel->user_is_superadmin()) {
             return redirect()->to('/dashboard/empresas')->with('error', 'Você não tem permissão para criar uma nova empresa.');
         }
 
@@ -51,6 +51,7 @@ class API extends ResourceController
         if(!$this->permissionsModel->user_has_permission('mod.empresas.edit') && !$this->permissionsModel->user_is_superadmin()) {
             return redirect()->to('/dashboard/empresas')->with('error', 'Você não tem permissão para editar esta empresa.');
         }
+
 
         if (!$id) {
             session()->setFlashdata('error', 'Empresa não encontrada.');

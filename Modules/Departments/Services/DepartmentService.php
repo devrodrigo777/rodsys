@@ -39,7 +39,17 @@ class DepartmentService
 
     protected function renderCreateEditDepartment($data = [])
     {
-        $data['permissoes'] = (new PermissoesModel())->getAllPermissions();
+        // Obtém todas as permissões associadas ao login do usuário logado
+        // Isso é útil pois a lógica é que o usuário que vá criar um departamento
+        // Não pode atribuir permissões que ele mesmo não possui
+        // Mas se for superadmin, carrega todas as permissões
+        $permissionsModel = new PermissoesModel();
+
+        if($permissionsModel->user_is_superadmin()) {
+            $data['permissoes'] = $permissionsModel->findAll();
+        } else {
+            $data['permissoes'] = $permissionsModel->listMyPermissions();
+        }
 
         // Defaults
         $data['is_editing'] = false;
@@ -47,17 +57,29 @@ class DepartmentService
 
         if ($this->params) {
             $departmentModel = new CargosModel();
+            $permissionsModel = new PermissoesModel();
+
+
             $data['departamento'] = $departmentModel->find($this->params);
             $data['is_editing'] = true;
-
+            $id_cargo = intval(esc($this->params));
+            $whereClause = ['cargos_permissoes.id_cargo' => $id_cargo];
+            
+            if(!$permissionsModel->user_is_superadmin()) {
+                $logged_id_empresa = session()->get('id_empresa');
+                $whereClause['cargos.id_empresa'] = intval($logged_id_empresa);
+            }
             // Load permissions associated with this cargo (id_permissao and slug)
-            $db = \Config\Database::connect();
-            $builder = $db->table('cargos_permissoes')
-                ->select('cargos_permissoes.id_permissao, permissoes.slug')
-                ->join('permissoes', 'permissoes.id_permissao = cargos_permissoes.id_permissao')
-                ->where('cargos_permissoes.id_cargo', $this->params);
+            // $db = \Config\Database::connect();
+            // $builder = $db->table('cargos_permissoes')
+            //     ->select('cargos_permissoes.id_permissao, permissoes.slug')
+            //     ->join('permissoes', 'permissoes.id_permissao = cargos_permissoes.id_permissao')
+            //     ->where('cargos_permissoes.id_cargo', $this->params);
 
-            $assigned = $builder->get()->getResultArray();
+            // $assigned = $builder->get()->getResultArray();
+
+
+            $assigned = $permissionsModel->getPermissionsByCargo($id_cargo,'cargos_permissoes.id_permissao, permissoes.slug, permissoes.grupo', $whereClause);
 
             $selected = [];
             foreach ($assigned as $row) {
@@ -85,11 +107,20 @@ class DepartmentService
     public function deleteDepartment($id_cargo)
     {
         $cargoModel = new CargosModel();
+        $permissionsModel = new PermissoesModel();
+
         $db = \Config\Database::connect();
+
+        $logged_user_empresa = session()->get('id_empresa');
 
         try {
             // Check if cargo exists
-            $cargo = $cargoModel->find($id_cargo);
+            // Verificar se o cargo pertence à empresa do usuário logado (a menos que superadmin)
+            if(!$permissionsModel->user_is_superadmin()) {
+                $cargo = $cargoModel->where('id_empresa', $logged_user_empresa)->find($id_cargo);
+            } else {
+                $cargo = $cargoModel->find($id_cargo);
+            }
             if (!$cargo) {
                 return [
                     'success' => false,
@@ -116,6 +147,7 @@ class DepartmentService
             // Reassign all people with this cargo to the 'nenhum' cargo
             $db->table('pessoas')
                 ->where('id_cargo', $id_cargo)
+                ->where('id_empresa', $logged_user_empresa)
                 ->update(['id_cargo' => $id_cargo_nenhum]);
 
             // Delete associated permissions
@@ -161,11 +193,14 @@ class DepartmentService
                 ];
             }
 
+            
             // Verify department belongs to logged-in user's company (unless superadmin)
             $permissionsModel = new PermissoesModel();
             if (!$permissionsModel->user_is_superadmin()) {
                 $id_empresa = session()->get('id_empresa');
+
                 if ($department['id_empresa'] != $id_empresa) {
+                    
                     return [
                         'success' => false,
                         'message' => 'Você não tem permissão para editar este departamento.'
@@ -184,11 +219,22 @@ class DepartmentService
             // Clear existing permissions
             $db->table('cargos_permissoes')->where('id_cargo', $id_cargo)->delete();
 
+            // Verificar se as permissões enviadas fazem parte das permissões do usuário logado
+            $myPermissions = $permissionsModel->listMyPermissions();
+            $myPermissionIds = array_map(function($perm) {
+                return (int) $perm['id_permissao'];
+            }, $myPermissions);
+
             // Associate new permissions in cargos_permissoes table using a batch insert
             if (!empty($permissoes) && is_array($permissoes)) {
                 $permissoesTable = $db->table('cargos_permissoes');
                 $batch = [];
                 foreach ($permissoes as $id_permissao) {
+                    if(!in_array((int)$id_permissao, $myPermissionIds)) {
+                        // Pular se a permissão não pertence ao usuário logado
+                        continue;
+                    }
+
                     $batch[] = [
                         'id_cargo' => $id_cargo,
                         'id_permissao' => (int) $id_permissao,

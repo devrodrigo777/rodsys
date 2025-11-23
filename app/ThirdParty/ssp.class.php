@@ -390,6 +390,13 @@ class SSP {
 			$whereAllSql = 'WHERE '.$str;
 		}
 
+		// echo "SELECT `".implode("`, `", self::pluck($columns, 'db'))."`
+		// 	 FROM `$table`
+		// 	 $joinClause
+		// 	 $where
+		// 	 $order
+		// 	 $limit";
+		// 	 die();
 		// Main query to actually get the data
 		$data = self::sql_exec( $db, $bindings,
 			"SELECT `".implode("`, `", self::pluck($columns, 'db'))."`

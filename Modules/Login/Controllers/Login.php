@@ -56,8 +56,24 @@ class Login extends BaseController
     {
 
         // Verificar permissões de editar um usuario aqui, se necessário
-        if(!$this->permissionsModel->user_has_permission('mod.user.edit') || !$this->permissionsModel->user_is_superadmin()) {
+        if(!$this->permissionsModel->user_has_permission('mod.user.edit') && !$this->permissionsModel->user_is_superadmin()) {
             return redirect()->to('/dashboard/acessos/usuarios')->with('error', 'Você não tem permissão para editar este usuário.');
+        }
+
+        // Verificação prévia para garantir que o usuário pode editar o usuário com o ID fornecido
+        if(!$this->permissionsModel->user_is_superadmin()) {
+            $loginModel = new \Modules\Login\Models\LoginModel();
+            $usuario = $loginModel
+                ->where("id_empresa", session()->get('id_empresa'))
+                ->where("id_usuario", $id)
+                // whereNot seja ele mesmo
+                ->where('id_usuario !=', session()->get('usuario'))
+                ->first();
+
+            if ($usuario === null) {
+                session()->setFlashdata('user.feedback.icon', 'error');
+                return redirect()->to('dashboard/acessos/usuarios')->with('user.feedback', 'Você não tem permissão para editar este usuário.');
+            }
         }
 
         $dashboard = new Dashboard();
@@ -82,7 +98,7 @@ class Login extends BaseController
     public function newUser()
     {
         // Verificar permissões de criar um usuario aqui, se necessário
-        if(!$this->permissionsModel->user_has_permission('mod.user.edit') || !$this->permissionsModel->user_is_superadmin()) {
+        if(!$this->permissionsModel->user_has_permission('mod.user.edit') && !$this->permissionsModel->user_is_superadmin()) {
             return redirect()->to('/dashboard/acessos/usuarios')->with('error', 'Você não tem permissão para criar um novo usuário.');
         }
 

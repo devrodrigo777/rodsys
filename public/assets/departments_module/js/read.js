@@ -53,7 +53,7 @@ function deleteDepartment(departmentId, departmentName) {
                         // swal.fire
                         Swal.fire({
                             title: 'Erro!',
-                            text: 'Houve um erro ao deletar o departamento: ' + xhr.responseText,
+                            text: 'Houve um erro ao deletar o departamento.',
                             icon: 'error',
                             confirmButtonText: 'OK'
                         });

@@ -37,7 +37,7 @@ class UserManagement
     {
         
         // Check permission
-        // $permissoes_model = new PermissoesModel();
+        $permissoes_model = new PermissoesModel();
         // if (!$permissoes_model->user_has_permission('mod.user.create')) {
         //     return '';
         // }
@@ -46,29 +46,46 @@ class UserManagement
         $data['is_editing'] = false;
         $data['usuario'] = null;
 
+
         // Load user if editing
         if ($this->params) {
+            if(!$permissoes_model->user_has_permission('mod.user.edit') && !$permissoes_model->user_is_superadmin()) {
+                return redirect()->to('dashboard/acessos/usuarios')->with('feedback.error', 'Você não tem permissão para editar este usuário.');
+            }
+
+            // Se for superadmin, pode editar qualquer usuário
+            // Senão, só pode editar usuários da mesma empresa
+            if($permissoes_model->user_is_superadmin())
+                $where_logged_id_empresa = ['pessoas.id_pessoa >'=>'0'];
+            else
+                $where_logged_id_empresa = ['pessoas.id_empresa' => session()->get('id_empresa')];
+
             $loginModel = new LoginModel();
             
             $usuario = $loginModel
                 ->select($loginModel->table . '.*, pessoas.id_cargo, pessoas.nome_completo')
                 ->join('pessoas', 'pessoas.id_usuario_login = ' . $loginModel->table . '.id_usuario', 'left')
                 ->where($loginModel->table . '.id_usuario', $this->params)
+                ->where($where_logged_id_empresa)
                 ->first();
 
-            if (!$usuario) {
+            if ($usuario === null) {
                 return '';
             }
 
             $data['usuario'] = $usuario;
             $data['is_editing'] = true;
+        } else {
+            if(!$permissoes_model->user_has_permission('mod.user.create') && !$permissoes_model->user_is_superadmin()) {
+                return redirect()->to('dashboard/acessos/usuarios')->with('feedback.error', 'Você não tem permissão para criar usuários.');
+            }
         }
 
+        
         // Load lists for dropdowns
         $data['lista_empresas'] = (new EmpresaModel())->findAll();
         $data['lista_cargos'] = (new CargosModel())->findAll();
 
-        
         return module_view('Login', 'Login/CreateEdit', $data);
     }
 

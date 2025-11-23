@@ -16,7 +16,7 @@ class API extends ResourceController
     
     use ResponseTrait;
 
-    private $permissionsModel;
+    protected $permissionsModel;
 
     public function __construct()
     {
@@ -26,8 +26,8 @@ class API extends ResourceController
     public function create()
     {
         // Verificar permissões de criar o departamento aqui, se necessário
-        if(!$this->permissionsModel->user_has_permission('user.departments.create') && !$this->permissionsModel->user_is_superadmin()) {
-            return redirect()->to('/dashboard/departmentos')->with('error', 'Você não tem permissão para criar um novo departamento.');
+        if(!$this->permissionsModel->user_has_permission('mod.departments.create') && !$this->permissionsModel->user_is_superadmin()) {
+            return redirect()->to('/dashboard/departamentos')->with('department.feedback.success', 'Você não tem permissão para criar um novo departamento.');
         }
 
         // Get POST data
@@ -150,7 +150,7 @@ class API extends ResourceController
     public function update($id = null)
     {
         // Tem permissão para atualizar? Se não, redireciona com erro
-        if(!$this->permissionsModel->user_has_permission('user.departments.edit') && !$this->permissionsModel->user_is_superadmin()) {
+        if(!$this->permissionsModel->user_has_permission('mod.departments.edit') && !$this->permissionsModel->user_is_superadmin()) {
             return redirect()->to('/dashboard/departamentos')->with('error', 'Você não tem permissão para editar este departamento.');
         }
 
@@ -164,10 +164,6 @@ class API extends ResourceController
             session()->setFlashdata('department.feedback.error', 'ID do departamento não fornecido.');
             return redirect()->back()->withInput();
         }
-
-        
-
-
 
         // Use DepartmentService to update cargo with permissions
         $departmentService = new DepartmentService();
@@ -188,7 +184,7 @@ class API extends ResourceController
         public function delete($id = null)
         {
             // Tem permissão para deletar? Se não, retorna erro
-            if(!$this->permissionsModel->user_has_permission('user.departments.delete') && !$this->permissionsModel->user_is_superadmin()) {
+            if(!$this->permissionsModel->user_has_permission('mod.departments.delete') && !$this->permissionsModel->user_is_superadmin()) {
                 return $this->fail('Você não tem permissão para deletar este departamento.', 403);
             }
             
@@ -236,12 +232,21 @@ class API extends ResourceController
         // ";
 
         // Variável where para filtrar resultado. Caso o usuário não seja superadmin, filtra apenas os cargos da empresa dele.
-        $whereClause = null;
+        $whereClause = 'TRUE AND ';
 
         if(!$permissionsModel->user_is_superadmin()) {
             $whereClause = '
-                id_empresa = ' . $id_empresa . ' OR is_global = 1
+                ( id_empresa = ' . $id_empresa . ' OR is_global = 1)
             ';
+        }
+
+        // Adiciona funcionalidade de busca
+        if(($_GET['search']['value'] ?? '') !== '') {
+            $searchValue = $db->escapeLikeString($_GET['search']['value']);
+            $whereClause .= " AND (
+                nome LIKE '%" . $searchValue . "%' OR
+                descricao LIKE '%" . $searchValue . "%'
+            )";
         }
 
         $permissionsModel = new PermissoesModel();

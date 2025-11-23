@@ -124,6 +124,9 @@ class EmpresasService
         $db->transStart();
 
         try {
+
+            $logged_user_empresa = session()->get('id_empresa');
+
             // Validate permissions
             $permissionsModel = new PermissoesModel();
             if (!$permissionsModel->user_has_permission('mod.empresas.edit') && !$permissionsModel->user_is_superadmin()) {
@@ -133,10 +136,32 @@ class EmpresasService
                 ];
             }
 
+            // Verificar se a empresa pertence à empresa do usuário logado (a menos que superadmin)
+            if(!$permissionsModel->user_is_superadmin()) {
+                $empresasModel = new EmpresasModel();
+                $empresa = $empresasModel->where('id_empresa', $id_empresa)
+                                         ->where('id_empresa', $logged_user_empresa)
+                                         ->first();
+                if (!$empresa) {
+                    return [
+                        'success' => false,
+                        'message' => 'Empresa não encontrada ou você não tem permissão para editá-la.'
+                    ];
+                }
+            }
+            
+
             $empresasModel = new EmpresasModel();
 
             // Check if empresa exists
-            $empresa = $empresasModel->find($id_empresa);
+            if(!$permissionsModel->user_is_superadmin()) {
+                $empresa = $empresasModel->where('id_empresa', $id_empresa)
+                                         ->where('id_empresa', $logged_user_empresa)
+                                         ->first();
+            } else {
+                $empresa = $empresasModel->find($id_empresa);
+            }
+
             if (!$empresa) {
                 return [
                     'success' => false,
@@ -197,9 +222,17 @@ class EmpresasService
             }
 
             $empresasModel = new EmpresasModel();
+            $logged_user_empresa = session()->get('id_empresa');
 
             // Check if empresa exists
-            $empresa = $empresasModel->find($id_empresa);
+            if(!$permissionsModel->user_is_superadmin()) {
+                $empresa = $empresasModel->where('id_empresa', $id_empresa)
+                                         ->where('id_empresa', $logged_user_empresa)
+                                         ->first();
+            } else {
+                $empresa = $empresasModel->find($id_empresa);
+            }
+
             if (!$empresa) {
                 return [
                     'success' => false,

@@ -24,7 +24,9 @@ class Departments extends BaseController
 
         // Verificar permissões de criar um novo departamento aqui, se necessário
         if(!$this->permissionsModel->user_has_permission('mod.departments.create') && !$this->permissionsModel->user_is_superadmin()) {
-            return redirect()->to('dashboard/departamentos')->with('error', 'Você não tem permissão para criar um novo departamento.');
+            // set flashdata
+            session()->setFlashdata('department.feedback.icon', 'error');
+            return redirect()->to('dashboard/departamentos')->with('department.feedback.success', 'Você não tem permissão para criar um novo departamento.');
         }
 
         $dashboard->__set_module_vars([
@@ -67,6 +69,21 @@ class Departments extends BaseController
         return $dashboard->_render();
     }
 
+    public function user_can_access_department($department_id)
+    {
+        // Lógica para verificar se o usuário atual pode acessar o departamento com o ID fornecido
+        // Retorna true ou false
+        $logged_user_empresa = session()->get('id_empresa');
+
+        
+        $department_byid = $this->departmentModel
+            ->where("id_empresa", $logged_user_empresa)
+            ->where("id_cargo", $department_id)
+            ->first();
+
+        return ($department_byid);
+    }
+
     public function api_read()
     {
         $departments = $this->departmentModel->findAll();
@@ -101,7 +118,16 @@ class Departments extends BaseController
 
         // Verificar permissões de editar o departamento aqui, se necessário
         if(!$this->permissionsModel->user_has_permission('mod.departments.edit') && !$this->permissionsModel->user_is_superadmin()) {
-            return redirect()->to('/departments')->with('error', 'Você não tem permissão para editar este departamento.');
+            session()->setFlashdata('department.feedback.icon', 'error');
+            return redirect()->to('/departments')->with('department.feedback.success', 'Você não tem permissão para editar este departamento.');
+        }
+
+        // Verifica se o departamento pode ser visualizado e editado pelo usuario atual
+        if(!$this->permissionsModel->user_is_superadmin()) {
+            if(!$this->user_can_access_department($id)) {
+                session()->setFlashdata('department.feedback.icon', 'error');
+                return redirect()->to('/dashboard/departamentos')->with('department.feedback.success', 'Você não tem permissão para editar este departamento.');
+            }
         }
 
         $dashboard->__set_module_vars([
@@ -127,8 +153,9 @@ class Departments extends BaseController
     {
         
         // Verificar permissões de atualizar o departamento aqui, se necessário
-        if(!$this->permissionsModel->user_has_permission('mod.departments.edit') || !$this->permissionsModel->user_is_superadmin()) {
-            return redirect()->to('/departments')->with('error', 'Você não tem permissão para editar este departamento.');
+        if(!$this->permissionsModel->user_has_permission('mod.departments.edit') && !$this->permissionsModel->user_is_superadmin()) {
+            session()->setFlashdata('department.feedback.icon', 'error');
+            return redirect()->to('/departments')->with('department.feedback.success', 'Você não tem permissão para editar este departamento.');
         }
 
         if (!$this->validate([

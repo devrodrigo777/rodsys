@@ -42,6 +42,13 @@ O projeto implementa uma arquitetura baseada em **módulos**, separação clara 
 - Permissões: `empresas.view`, `empresas.create`, `empresas.edit`, `empresas.delete`
 - Permissões: `departments.view`, `departments.create`, `departments.edit`, `departments.delete`
 
+#### 5. **Dashboard Modules** (`Modules/Dashboard/Controllers/Modules.php`)
+- Gerenciamento visual de módulos por empresa
+- Listagem de módulos disponíveis por empresa
+- Visualização de módulos para uma empresa específica
+- Integração com Dashboard controller
+- Permissão: `mod.modules.view`
+
 ---
 
 ## 🏗️ Arquitetura
@@ -93,15 +100,30 @@ Usuário → Form → API Controller → Service Layer → Models → Database
 2. **Validação de Propriedade (Tenant-Safe)**
    - Usuários não-superadmin só veem seus próprios registros
    - Queries filtradas por `id_empresa` da sessão
+   - Validação em listagens (LoginAPI.userList) e operações críticas
 
-3. **Hash de Senha**
+3. **Proteção de Usuário Logado**
+   - Usuário logado não pode se editar ou deletar a si mesmo
+   - Verificação via `session()->get('usuario')` vs `id_usuario_login`
+   - Botões de ação desabilitados na listagem para o próprio usuário
+
+4. **Permissões Granulares**
+   - Superadmin: acesso a TODAS as permissões
+   - Usuário comum: acesso apenas às permissões que ele próprio possui
+   - Criação de departamento: só assina permissões que o criador tem
+
+5. **Validação de Empresa**
+   - Operações de delete/read respeitam `id_empresa` do usuário logado
+   - Proteção em DepartmentService, EmpresasService, LoginAPI
+
+6. **Hash de Senha**
    - `Passlib::hashPassword()` para todas as novas senhas
    - Senha opcional em atualizações (permite reset sem obrigatoriedade)
 
-4. **Proteção CSRF**
+7. **Proteção CSRF**
    - CodeIgniter gerencia automaticamente tokens
 
-5. **Transações Atômicas**
+8. **Transações Atômicas**
    - Operações multi-tabela usam `$db->transBegin()`
    - Rollback automático em exceções
 
@@ -310,8 +332,121 @@ AJAX DELETE /login/api/usuarios/:id
   ↓
 LoginAPI::deleteUser($id) → UserManagement::deleteUser()
   ↓
+Validação: usuário não pode se deletar a si mesmo
+  ↓
 ✅ SweetAlert success → Reload page
 ❌ SweetAlert error → Show message
+```
+
+### UPDATE (Editar Departamento)
+
+```
+GET /dashboard/departamentos/:id
+  ↓
+DepartmentService::renderCreateEditDepartment($id)
+  ↓
+Validação: usuário pode ver apenas permissões que possui (ou todas se superadmin)
+  ↓
+Exibe: Departments/CreateEdit.php (is_editing=true, prefilled)
+  ↓
+POST /departments/api/update/:id (form submit)
+  ↓
+DepartmentService::updateDepartment()
+  ↓
+Validação: departamento pertence à empresa do usuário logado
+Validação: não é um departamento global ou readonly
+  ↓
+✅ Redirect + flashdata success
+❌ Redirect + flashdata error
+```
+
+---
+
+## 🔒 Multi-Tenant e Isolamento de Dados
+
+### Estratégia de Isolamento por Empresa
+
+O RODSYS implementa isolamento de dados em nível de aplicação:
+
+1. **Cada usuário tem um `id_empresa` na sessão**
+   ```php
+   $id_empresa = session()->get('id_empresa');
+   ```
+
+2. **Queries filtram automaticamente por empresa**
+   ```php
+   // Listar usuários apenas da empresa do usuário logado
+   $usuarios = $usuarioModel->where('id_empresa', $id_empresa)->findAll();
+   ```
+
+3. **Superadmin pode visualizar todas as empresas**
+   ```php
+   if (!$permissionsModel->user_is_superadmin()) {
+       $whereClause = "e.id_empresa = " . intval($id_empresa);
+   }
+   ```
+
+4. **Departamentos são isolados por empresa**
+   - `cargos.id_empresa` define a propriedade
+   - Departamentos globais (`is_global=1`) visíveis por todos
+   - Readonly departments não podem ser editados
+
+5. **Operações críticas validam propriedade**
+   - Delete de departamento: valida se pertence à empresa do usuário
+   - Update de usuário: valida se está na mesma empresa
+   - Reatribuição de pessoas: usa `WHERE id_empresa`
+
+### Proteção de Usuário Logado
+
+Implementação adicional:
+
+1. **Usuário não pode deletar a si mesmo**
+   ```php
+   if ($id_usuario_logado != $row['id_usuario_login']) {
+       // Mostrar botão delete
+   }
+   ```
+
+2. **Usuário não pode editar a si mesmo** (opcional, implementado em validação)
+   - Verificação antes de mostrar botão "Editar"
+
+3. **Permissões segmentadas por empresa**
+   - `mod.user.company.listall` = permite listar usuários de outras empresas
+   - Sem essa permissão, vê apenas da sua empresa
+
+---
+
+## 🛡️ Permissões Granulares do Desenvolvedor
+
+### Criação de Departamento com Permissões Restritas
+
+Quando um usuário cria um departamento, ele só pode atribuir permissões que ele próprio possui:
+
+```php
+// No DepartmentService::renderCreateEditDepartment()
+if($permissionsModel->user_is_superadmin()) {
+    $data['permissoes'] = $permissionsModel->findAll(); // TODAS
+} else {
+    $data['permissoes'] = $permissionsModel->listMyPermissions(); // Apenas dele
+}
+```
+
+### Busca em DataTables com Validação de Empresa
+
+```php
+// No LoginAPI::userList()
+// Filtro automático por empresa
+if (! $this->permissionsModel->user_is_superadmin() && 
+    !$this->permissionsModel->user_has_permission('mod.user.company.listall')) {
+    $whereClause = "e.id_empresa = " . intval($id_empresa_logada);
+}
+
+// Busca em múltiplos campos
+$whereClause .= " AND (
+    pessoas.nome_completo LIKE '%$search%' OR
+    c.nome LIKE '%$search%' OR
+    e.razao_social LIKE '%$search%'
+)";
 ```
 
 ---

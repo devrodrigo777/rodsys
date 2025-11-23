@@ -90,8 +90,17 @@
                              <?php
                                 // Botão criar usuário vinculado à empresa, apenas se estiver editando e se for superadmin
                                  if (!empty($is_editing) && $permissions->user_is_superadmin() ): ?>
-                                <a class="btn btn-warning ms-2" href="<?=base_url('dashboard/acessos/usuarios/?action=new&empresa_id=' . $empresa['id_empresa'])?>">
+                                <a class="btn btn-light ms-2" href="<?=base_url('dashboard/acessos/usuarios/?action=new&empresa_id=' . $empresa['id_empresa'])?>">
                                     Criar Usuário para esta Empresa
+                                </a>
+                            <?php endif; ?>
+
+                            <!-- Botão para gerenciar os módulos da empresa -->
+                             <?php
+                                // Botão gerenciar módulos da empresa, apenas se estiver editando
+                                 if (!empty($is_editing)): ?>
+                                <a class="btn btn-light ms-2" href="<?=base_url('dashboard/modulos/' . $empresa['id_empresa'])?>">
+                                    Gerenciar Módulos da Empresa
                                 </a>
                             <?php endif; ?>
                         </form>

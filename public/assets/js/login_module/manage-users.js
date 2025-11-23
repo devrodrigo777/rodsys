@@ -55,7 +55,7 @@ function deleteUser(userId) {
                         // swal.fire
                         Swal.fire({
                             title: 'Erro!',
-                            text: 'Houve um erro ao deletar o usuário: ' + xhr.responseText,
+                            text: 'Houve um erro ao deletar o usuário.',
                             icon: 'error',
                             confirmButtonText: 'OK'
                         });
@@ -107,7 +107,7 @@ $(document).ready(function(){
                 // swal.fire
                 Swal.fire({
                     title: 'Erro!',
-                    text: 'Houve um erro ao criar o usuário: ' + xhr.responseText,
+                    text: 'Houve um erro ao criar o usuário.',
                     icon: 'error',
                     confirmButtonText: 'OK'
                 });

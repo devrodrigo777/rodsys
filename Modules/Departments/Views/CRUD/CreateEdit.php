@@ -109,11 +109,14 @@ $readonly = ($departamento['readonly'] ?? false) || $is_superadmin;
                                         // Lógica para agrupar permissões (exemplo simples baseado em prefixos)
                                         $parts = explode('.', $permKey);
 
-                                        $group = $parts[0]; // Pega o primeiro segmento como grupo
+                                        // $group = $parts[0]; // Pega o primeiro segmento como grupo
+                                        $group = $perm['grupo'] ?? 'Diversas';
+
                                         if ($group !== $lastGroup) {
                                             if ($lastGroup !== ' ') {
                                                 // Fecha a div do grupo anterior
-                                                echo '</div></div><hr/>';
+                                                echo '</div></div>';
+                                                echo  '<div class="col-12"><strong>' . ucfirst($group) . ':</strong></div>';
                                             }
                                             // Inicia um novo grupo
                                             // echo '<div class="col-12 pb-2"><div class="row"><strong>' . ucfirst($group) . ':</strong>';
