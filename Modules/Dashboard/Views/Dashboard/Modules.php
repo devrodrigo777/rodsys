@@ -35,13 +35,14 @@
     // Verificar se há o flashdata success para exibir o swal.fire pro usuario
     if(
         session()->getFlashdata('department.feedback.success')):
-    
+
+        $icon = session()->getFlashdata('icon') ?? 'success';
         $message = session()->getFlashdata('department.feedback.success');
     ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         Swal.fire({
-            icon: 'success',
+            icon: '<?= $icon ?>',
             text: '<?= esc($message) ?>',
             timer: 3000,
             timerProgressBar: true,

@@ -26,7 +26,7 @@ $routes->get('dashboard/acessos/usuarios/(:num)', '\Modules\Login\Controllers\Lo
 $routes->post('dashboard/acessos/usuarios/(:num)', '\Modules\Login\Controllers\LoginAPI::update/$1');
 
 $routes->get('dashboard/acessos/usuarios/criar', '\Modules\Login\Controllers\Login::newUser');
-$routes->get('dashboard/acessos/usuarios/api/list', '\Modules\Login\Controllers\LoginApi::userList');
+$routes->get('dashboard/acessos/usuarios/api/list', '\Modules\Login\Controllers\LoginAPI::userList');
 
 $routes->get('login', '\Modules\Login\Controllers\Login::index');
 $routes->get('login/out', '\Modules\Login\Controllers\Login::logout');

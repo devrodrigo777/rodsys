@@ -55,19 +55,17 @@ class ModulesAPI extends ResourceController
             'host' => $db->hostname,
         ];
 
-        $joinClause = "";
-        $isComplex = false;
+        $joinClause = "LEFT JOIN empresas_modulos em ON modulos.id = em.id_modulo ";
+        $isComplex = true;
 
         if($authorized && $company_id)
         {
             // Filtra os módulos pela empresa específica
             $table = "modulos";
 
-            $joinClause = "
-                JOIN empresas_modulos em ON modulos.id = em.id_modulo 
-                WHERE em.id_empresa = " . intval($company_id);
+            $joinClause .= "WHERE em.id_empresa = " . intval($company_id);
 
-            $isComplex = true;
+            
         }
         else
             $table = 'modulos';
@@ -77,8 +75,19 @@ class ModulesAPI extends ResourceController
         $columns = array(
             ['db' => 'nome', 'dt' => 0],
             ['db' => 'versao', 'dt' => 1],
-            ['db' => 'ativo', 'dt' => 2, 'formatter' => function($id) {
+            ['db' => 'id_modulo', 'dt' => 3],
+            ['db' => 'id', 'dt' => 4],
+            ['db' => 'ativo', 'dt' => 2, 'formatter' => function($id, $row) {
                 $html = '';
+
+                // echo $id . ' - ' . $row['id_modulo'];
+                
+                // Verifica se o id do modulo é igual o em.id_modulo e se está ativo
+                // Se estiver ativo, ele marca como ativo
+                if($row['id'] == $row['id_modulo'])
+                    $html .= '<span class="badge bg-success">Ativo</span>';
+                else
+                    $html .= '<span class="badge bg-secondary">Inativo</span>';
 
                 // if($this->permissionsModel->user_is_superadmin())
                 //     $html .= '<button class="btn btn-sm btn-primary" onclick="updateModulo(' . $id . ')"><i class="fa fa-arrow-rotate-right"></i></button> ';

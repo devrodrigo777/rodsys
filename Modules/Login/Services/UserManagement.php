@@ -83,8 +83,13 @@ class UserManagement
 
         
         // Load lists for dropdowns
-        $data['lista_empresas'] = (new EmpresaModel())->findAll();
-        $data['lista_cargos'] = (new CargosModel())->findAll();
+        if(!$permissoes_model->user_is_superadmin()) {
+            $data['lista_empresas'] = (new EmpresaModel())->listForMe();
+            $data['lista_cargos'] = (new CargosModel())->listForMe();
+        } else {
+            $data['lista_empresas'] = (new EmpresaModel())->findAll();
+            $data['lista_cargos'] = (new CargosModel())->findAll();
+        }
 
         return module_view('Login', 'Login/CreateEdit', $data);
     }
